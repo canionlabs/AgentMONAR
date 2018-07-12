@@ -8,13 +8,15 @@
 
 class Event {
 public:
-  Event(String payload); // constructor
+  Event(int value, unsigned long timestamp); // constructor
   unsigned long getTimestamp();
-  String getPayload();
+  unsigned long getValue();
+  unsigned long getPayload();
 
 private:
   unsigned long _timestamp;
-  String _payload;
+  unsigned long _payload;
+  int _value;
 
-  unsigned long _setTimestamp();
+  unsigned long _generatePayload();
 };

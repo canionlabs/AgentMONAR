@@ -16,6 +16,15 @@
 - Buzzer Alarm [optional]
 - Led Alarm [optional]
 
+# Boards:
+
+![Wemos D1 Mini](doc/img/wemosd1.jpg)
+![ESP-12 with RGB Led and LDR](doc/img/esp12_led_ldr.png)
+
+# Schematics:
+
+![Agent Schematics v1.0](doc/img/MONAR_Agent_v10.png)
+
 # Price
 
 > Estimated value: R$ 73,00

@@ -5,8 +5,12 @@ class VirtualControl
 {
 public:
   VirtualControl();
-  void reportDS18B20(ONE_WIRE_BUS);
+
+  int MinTemperature;
+  int MaxTemperature;
+
   bool isVariance(float temperature);
-  void sendEvent();
-  void sendNotification();
+  void reportDS18B20(int ONE_WIRE_BUS);
+  void publishVirtual(float payload, int port);
+  void sendNotification(float temperature);
 };

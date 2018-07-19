@@ -1,20 +1,21 @@
-// /*
-// * @Author: caiovictormartinscarvalho
-// * @Date:   2018-07-13 10:26:22
-// * @Last Modified by:   caiovictormartinscarvalho
-// * @Last Modified time: 2018-07-17 10:49:38
-// */
+/*
+* @Author: caiovictormartinscarvalho
+* @Date:   2018-07-13 10:26:22
+* @Last Modified by:   caiovictormartinscarvalho
+* @Last Modified time: 2018-07-19 18:52:38
+*/
 
-// #include "Settings.h"
+#include "VirtualControl.h"
+#include "Sensor/Sensor.h"
 #include <sstream>
 
-int PROB_LIMIT = 3
-int PROB_VIRTUAL_PORTS[PROB_LIMIT] = {1, 2, 3}
-int ENVIROMENT_PORT = 4
+const int PROB_LIMIT = 3;
+int PROB_VIRTUAL_PORTS[PROB_LIMIT] = {1, 2, 3};
+int ENVIROMENT_PORT = 4;
 
-void VirtualControl::reportDS18B20(ONE_WIRE_BUS) {
+void VirtualControl::reportDS18B20(int ONE_WIRE_BUS) {
   Sensor sensor(ONE_WIRE_BUS);
-  uint8_t DS18Count = sensor.getCount();
+  int DS18Count = sensor.getCount();
 
   for(int i=0; i<=DS18Count; i++){
     float temperature = sensor.getTemperature(i);
@@ -24,25 +25,24 @@ void VirtualControl::reportDS18B20(ONE_WIRE_BUS) {
   }
 }
 
-
 void VirtualControl::publishVirtual(float payload, int port) {
-  if isVariance(payload) {
+  if (isVariance(payload)) {
     sendNotification(payload);
   }
   Blynk.virtualWrite(port, payload);
 }
 
-
 bool VirtualControl::isVariance(float temperature) {
-  return false;
-  // continue;
-  // Blynk.virtualWrite(port, payload)
+  if (temperature >= MaxTemperature || temperature <= MinTemperature) {
+    return true;
+  } else {
+    return false;
+  }
 }
-
 
 void VirtualControl::sendNotification(float temperature) {
   std::ostringstream notifyMessage;
-  notifyMessage << "Alerta de Temperatura, " << somevar << "˚C registrados no local {DEVICE_NAME}";
+  notifyMessage << "Alerta de Temperatura, " << notifyMessage << " ˚C registrados no local {DEVICE_NAME}";
   Blynk.notify(notifyMessage.str());
 }
 

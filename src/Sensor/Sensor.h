@@ -1,8 +1,7 @@
 #pragma once
 
 
-class Sensor
-{
+class Sensor {
 public:
 	Sensor(int PORT);
 

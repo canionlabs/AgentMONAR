@@ -2,7 +2,7 @@
 * @Author: ramonmelo
 * @Date:   2018-07-09 16:59:17
 * @Last Modified by:   caiovictormartinscarvalho
-* @Last Modified time: 2018-07-19 18:53:09
+* @Last Modified time: 2018-07-19 19:04:49
 */
 
 #include "Sensor.h"
@@ -12,7 +12,7 @@
 Sensor::Sensor(int port) {
   PORT = port;
   if (PORT == 14) {
-  	OneWire oneWire(ONE_WIRE_BUS);
+  	OneWire oneWire(PORT);
     DallasTemperature sensor(&oneWire);
   }
 };
@@ -33,7 +33,7 @@ int Sensor::getCount() {
 
 float Sensor::getTemperature(int index) {
   if (isDS18B20() == true) {
-    sensors.requestTemperatures();
+    sensor.requestTemperatures();
     return sensor.getTempCByIndex(index);
   }
 }

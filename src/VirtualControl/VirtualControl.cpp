@@ -1,12 +1,13 @@
 /*
 * @Author: caiovictormartinscarvalho
 * @Date:   2018-07-13 10:26:22
-* @Last Modified by:   caiovictormartinscarvalho
-* @Last Modified time: 2018-07-19 18:52:38
+* @Last Modified by:   Ramon Melo
+* @Last Modified time: 2018-07-21
 */
 
 #include "VirtualControl.h"
 #include "Sensor/Sensor.h"
+#include <BlynkSimpleEsp8266.h>x
 #include <sstream>
 
 const int PROB_LIMIT = 3;

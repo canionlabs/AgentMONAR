@@ -1,8 +1,8 @@
 /*
 * @Author: ramonmelo
 * @Date:   2018-07-09 16:59:17
-* @Last Modified by:   caiovictormartinscarvalho
-* @Last Modified time: 2018-07-19 19:04:49
+* @Last Modified by:   Ramon Melo
+* @Last Modified time: 2018-07-21
 */
 
 #include "Sensor.h"
@@ -26,7 +26,7 @@ bool Sensor::isDS18B20() {
 
 int Sensor::getCount() {
   if (isDS18B20() == true) {
-    return sensor.getDS18Count();
+    return this.sensor.getDS18Count();
   }
   return 1;
 }

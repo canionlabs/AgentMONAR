@@ -1,6 +1,5 @@
 #pragma once
 
-
 class Sensor {
 public:
 	Sensor(int PORT);
@@ -10,5 +9,5 @@ public:
 	float getTemperature(int index);
 
 private:
-	int PORT;	
+	int PORT;
 };

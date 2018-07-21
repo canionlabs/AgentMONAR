@@ -1,8 +1,8 @@
 /*
 * @Author: ramonmelo
 * @Date:   2018-07-05
-* @Last Modified by:   caiovictormartinscarvalho
-* @Last Modified time: 2018-07-19 18:51:49
+* @Last Modified by:   Ramon Melo
+* @Last Modified time: 2018-07-21
 */
 
 #define BLYNK_PRINT Serial
@@ -13,15 +13,14 @@
 #include "Arduino.h"
 #include <ESP8266WiFi.h>
 #include <BlynkSimpleEsp8266.h>
-#include "VirtualControl.h"
-
+// #include "VirtualControl/VirtualControl.h"
 
 // OneWire Settings
 // OneWire oneWire(ONE_WIRE_BUS);
 // DallasTemperature sensors(&oneWire);
 
 // Virtual Pins Operations
-VirtualControl virtualControl();
+// VirtualControl virtualControl();
 
 // Blynk App credentials
 char auth[] = "d9e2d7366eb24c848885c7b672aaaf96";
@@ -84,14 +83,14 @@ char pass[] = "Venal@2016";
 void setup() {
   Serial.begin(9600);
   Blynk.begin(auth, ssid, pass, address, 8080);
-  VirtualControl.MinTemperature(10);
-  VirtualControl.MaxTemperature(30);
+  // VirtualControl.MinTemperature(10);
+  // VirtualControl.MaxTemperature(30);
 }
 
 void loop() {
   Blynk.run();
-  virtualControl.reportDS18B20(ONE_WIRE_BUS); 
-  // virtualControl.reportDHT22(); 
+  // virtualControl.reportDS18B20(ONE_WIRE_BUS);
+  // virtualControl.reportDHT22();
   // virtualControl.reportDS18B20(ONE_WIRE_BUS);
 
   delay(1000 * 60 * 1); // (x * y * minutes)

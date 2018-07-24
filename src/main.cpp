@@ -2,96 +2,88 @@
 * @Author: ramonmelo
 * @Date:   2018-07-05
 * @Last Modified by:   Ramon Melo
-* @Last Modified time: 2018-07-21
+* @Last Modified time: 2018-07-23
 */
 
+///
+/// DHT22 -> D5
+///
+
 #define BLYNK_PRINT Serial
-#define ONE_WIRE_BUS 14
-#define VP_MIN_TEMP 20
-#define VP_MAX_TEMP 21
+#define ONE_WIRE_BUS D5
 
 #include "Arduino.h"
 #include <ESP8266WiFi.h>
 #include <BlynkSimpleEsp8266.h>
 // #include "VirtualControl/VirtualControl.h"
 
-// OneWire Settings
-// OneWire oneWire(ONE_WIRE_BUS);
-// DallasTemperature sensors(&oneWire);
+#include <OneWire.h>
+#include <DallasTemperature.h>
 
-// Virtual Pins Operations
-// VirtualControl virtualControl();
+ADC_MODE(ADC_VCC);
+
+OneWire oneWire(ONE_WIRE_BUS);
+DallasTemperature sensors(&oneWire);
+DeviceAddress thermometer;
+
+BlynkTimer timer;
+
+// Auth Token in the Blynk App.
+char auth[] = "79ff8641717a48adbe72780710e8f945";
+char address[] = "blynk.canionlabs.io";
 
 // Blynk App credentials
 char auth[] = "d9e2d7366eb24c848885c7b672aaaf96";
 char address[] = "blynk.canionlabs.io";
 
 // WiFi credentials.
-char ssid[] = "Venal Ninja Labs";
-char pass[] = "Venal@2016";
+char ssid[] = "Automata";
+char pass[] = "data.hal.johnny";
 
+void sendSensor()
+{
+  Serial.print("Requesting temperatures...");
+  sensors.requestTemperatures(); // Send the command to get temperatures
+  // Serial.println("DONE");
 
-// void initialVirtualStatus() {
-//   Blynk.virtualWrite(V10, "Selecione o");
-//   Blynk.virtualWrite(V11, "tipo de produção");
-//   for (int i=0; i <= amountTypes ; i++) {
-//     Blynk.virtualWrite(i, 0);
-//   }
-// }
+  float tempC = sensors.getTempC(thermometer);
 
+  Serial.println(tempC);
 
-// void updateVirtualStatus(int pin) {
-//   if (pin >= 0 || pin <= amountTypes) {
-//     bufferType = pin;
-//     Blynk.virtualWrite(V10, "Produção:");
-//     Blynk.virtualWrite(V11, pinTypes[pin]);
-//   }
-//   for (int i=0; i <= amountTypes ; i++) {
-//     if (i != pin) {
-//       Blynk.virtualWrite(i, 0);
-//     }
-//   }
-// }
+  Blynk.virtualWrite(V5, tempC);
 
-
-// BLYNK_CONNECTED() {
-//   if (bufferType != -1) {
-//     updateVirtualStatus(bufferType);
-//   } else {
-//     initialVirtualStatus();
-//   }
-// }
-
-
-// BLYNK_WRITE_DEFAULT() {
-//   int pin = request.pin;
-//   updateVirtualStatus(pin);
-// }
-
-
-// BLYNK_WRITE_DEFAULT() {
-//   int pin = request.pin;
-//   int value = param.asInt();
-
-//   if (pin == VP_MIN_TEMP) {
-//     VirtualControl.MinTemperature(value);
-//   } else if (pin == VP_MAX_TEMP) {
-//     VirtualControl.MaxTemperature(value);
-//   }
-// }
+  float v = ((float) ESP.getVcc() / 1024.0f) * 1.12;
+  Blynk.virtualWrite(V7, v);
+}
 
 void setup() {
   Serial.begin(9600);
+
+  Serial.print("Locating devices...");
+  sensors.begin();
+  Serial.print("Found ");
+  Serial.print(sensors.getDeviceCount(), DEC);
+  Serial.println(" devices.");
+
+  // report parasite power requirements
+  Serial.print("Parasite power is: ");
+  if (sensors.isParasitePowerMode()) {
+    Serial.println("ON");
+  } else {
+    Serial.println("OFF");
+  }
+
+  if (!sensors.getAddress(thermometer, 0)) {
+    Serial.println("Unable to find address for Device 0");
+  }
+
+  sensors.setResolution(thermometer, 9);
+
   Blynk.begin(auth, ssid, pass, address, 8080);
-  // VirtualControl.MinTemperature(10);
-  // VirtualControl.MaxTemperature(30);
+  timer.setInterval(1000L * 30, sendSensor);
 }
 
 void loop() {
   Blynk.run();
-  // virtualControl.reportDS18B20(ONE_WIRE_BUS);
-  // virtualControl.reportDHT22();
-  // virtualControl.reportDS18B20(ONE_WIRE_BUS);
-
-  delay(1000 * 60 * 1); // (x * y * minutes)
+  timer.run();
 }

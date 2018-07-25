@@ -1,15 +1,21 @@
 #pragma once
 
-class VirtualControl
-{
-public:
-  VirtualControl();
+#include "Sensor/Sensor.h"
 
-  int MinTemperature;
-  int MaxTemperature;
+namespace monar {
+  class VirtualControl : Sensor
+  {
+  public:
+    VirtualControl(int port);
 
-  bool isVariance(float temperature);
-  void reportDS18B20(int ONE_WIRE_BUS);
-  void publishVirtual(float payload, int port);
-  void sendNotification(float temperature);
-};
+    // void publish() override;
+    // void service() override;
+
+    // int MinTemperature;
+    // int MaxTemperature;
+    // bool isVariance(float temperature);
+    // void reportDS18B20(int ONE_WIRE_BUS);
+    // void publishVirtual(float payload, int port);
+    // void sendNotification(float temperature);
+  };
+}

@@ -1,13 +1,19 @@
 #pragma once
 
-class Sensor {
-public:
-	Sensor(int PORT);
+#define MONAR_SENSOR_DALLAS 7
 
-	bool isDS18B20();
-	int getCount();
-	float getTemperature(int index);
+namespace monar {
 
-private:
-	int PORT;
-};
+  class Sensor {
+  public:
+    Sensor(int port);
+
+    void publish(void (*push)(int, float));
+    void setData(float data);
+
+    virtual void service() = 0;
+  private:
+    int port;
+    float data;
+  };
+}

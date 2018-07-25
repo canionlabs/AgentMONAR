@@ -1,52 +1,22 @@
 /*
-* @Author: ramonmelo
-* @Date:   2018-07-09 16:59:17
+* @Author: Ramon Melo
+* @Date:   2018-07-24
 * @Last Modified by:   Ramon Melo
-* @Last Modified time: 2018-07-21
+* @Last Modified time: 2018-07-24
 */
 
 #include "Sensor.h"
-#include <OneWire.h>
-#include <DallasTemperature.h>
 
-Sensor::Sensor(int port) {
-  PORT = port;
-  if (PORT == 14) {
-  	OneWire oneWire(PORT);
-    DallasTemperature sensor(&oneWire);
+namespace monar {
+  Sensor::Sensor(int port):
+    port(port) {
   }
-};
 
-bool Sensor::isDS18B20() {
-  if (PORT == 14) {
-    return true;
+  void Sensor::publish(void (*push)(int, float)) {
+    (*push)(this->port, this->data);
   }
-  return false;
-}
 
-int Sensor::getCount() {
-  if (isDS18B20() == true) {
-    return this.sensor.getDS18Count();
-  }
-  return 1;
-}
-
-float Sensor::getTemperature(int index) {
-  if (isDS18B20() == true) {
-    sensor.requestTemperatures();
-    return sensor.getTempCByIndex(index);
+  void Sensor::setData(float data) {
+    this->data = data;
   }
 }
-
-// unsigned long Sensor::getValue() {
-// 	return _value;
-// }
-
-// unsigned long Sensor::getTimestamp() {
-// 	return _timestamp;
-// };
-
-// unsigned long Sensor::_generatePayload() {
-//   unsigned long out = _timestamp << sizeof(unsigned short) * 8;
-//   return out | _value;
-// }

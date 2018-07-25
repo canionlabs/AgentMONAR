@@ -2,50 +2,74 @@
 * @Author: caiovictormartinscarvalho
 * @Date:   2018-07-13 10:26:22
 * @Last Modified by:   Ramon Melo
-* @Last Modified time: 2018-07-21
+* @Last Modified time: 2018-07-24
 */
 
 #include "VirtualControl.h"
-#include "Sensor/Sensor.h"
-#include <BlynkSimpleEsp8266.h>x
-#include <sstream>
+// #include "Sensor/Sensor.h"
+// #include <BlynkSimpleEsp8266.h>x
+// #include <sstream>
 
-const int PROB_LIMIT = 3;
-int PROB_VIRTUAL_PORTS[PROB_LIMIT] = {1, 2, 3};
-int ENVIROMENT_PORT = 4;
+namespace monar {
+  VirtualControl::VirtualControl(int port) : Sensor(port)
+  {
 
-void VirtualControl::reportDS18B20(int ONE_WIRE_BUS) {
-  Sensor sensor(ONE_WIRE_BUS);
-  int DS18Count = sensor.getCount();
-
-  for(int i=0; i<=DS18Count; i++){
-    float temperature = sensor.getTemperature(i);
-    if (i <= PROB_LIMIT) {
-      publishVirtual(temperature, PROB_VIRTUAL_PORTS[i]);
-    }
   }
-}
 
-void VirtualControl::publishVirtual(float payload, int port) {
-  if (isVariance(payload)) {
-    sendNotification(payload);
-  }
-  Blynk.virtualWrite(port, payload);
-}
+  // void VirtualControl::publish() {
 
-bool VirtualControl::isVariance(float temperature) {
-  if (temperature >= MaxTemperature || temperature <= MinTemperature) {
-    return true;
-  } else {
-    return false;
-  }
-}
+  // }
 
-void VirtualControl::sendNotification(float temperature) {
-  std::ostringstream notifyMessage;
-  notifyMessage << "Alerta de Temperatura, " << notifyMessage << " ˚C registrados no local {DEVICE_NAME}";
-  Blynk.notify(notifyMessage.str());
+  // void VirtualControl::service() {
+
+  // }
 }
+// void VirtualControl::service()
+// {
+
+// }
+
+// void VirtualControl::publish()
+// {
+
+// }
+
+// const int PROB_LIMIT = 3;
+// int PROB_VIRTUAL_PORTS[PROB_LIMIT] = {1, 2, 3};
+// int ENVIROMENT_PORT = 4;
+
+// void VirtualControl::reportDS18B20(int ONE_WIRE_BUS) {
+//   Sensor sensor(ONE_WIRE_BUS);
+//   int DS18Count = sensor.getCount();
+
+//   for(int i=0; i<=DS18Count; i++){
+//     float temperature = sensor.getTemperature(i);
+//     if (i <= PROB_LIMIT) {
+//       publishVirtual(temperature, PROB_VIRTUAL_PORTS[i]);
+//     }
+//   }
+// }
+
+// void VirtualControl::publishVirtual(float payload, int port) {
+//   if (isVariance(payload)) {
+//     sendNotification(payload);
+//   }
+//   Blynk.virtualWrite(port, payload);
+// }
+
+// bool VirtualControl::isVariance(float temperature) {
+//   if (temperature >= MaxTemperature || temperature <= MinTemperature) {
+//     return true;
+//   } else {
+//     return false;
+//   }
+// }
+
+// void VirtualControl::sendNotification(float temperature) {
+//   std::ostringstream notifyMessage;
+//   notifyMessage << "Alerta de Temperatura, " << notifyMessage << " ˚C registrados no local {DEVICE_NAME}";
+//   Blynk.notify(notifyMessage.str());
+// }
 
 
 // void VirtualControl::sendNotification(port) {

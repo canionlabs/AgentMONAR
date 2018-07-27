@@ -2,13 +2,14 @@
 * @Author: ramonmelo
 * @Date:   2018-07-05
 * @Last Modified by:   Ramon Melo
-* @Last Modified time: 2018-07-24
+* @Last Modified time: 2018-07-26
 */
 
 ///
 /// DHT22 -> D5
 ///
 
+#define DEVICE_NAME "Monar"
 #define BLYNK_PRINT Serial
 #define UPDATE_RATE 2 // seconds
 #define ONE_WIRE_BUS D5
@@ -19,6 +20,7 @@
 #include "Sensor/SensorDallas.h"
 
 OneWire oneWire(ONE_WIRE_BUS);
+WidgetTerminal terminal(V0);
 
 ADC_MODE(ADC_VCC);
 
@@ -41,8 +43,11 @@ void sendSensor()
 {
   dallas.publish(push);
 
-//   float v = ((float) ESP.getVcc() / 1024.0f) * 1.12;
-//   Blynk.virtualWrite(V7, v);
+  terminal.print(F("."));
+  terminal.flush();
+
+  float v = ((float) ESP.getVcc() / 1024.0f) * 1.12;
+  Blynk.virtualWrite(V5, v);
 }
 
 void setup() {
@@ -50,11 +55,16 @@ void setup() {
 
   Blynk.begin(auth, ssid, pass, address, 8080);
   timer.setInterval(1000L * UPDATE_RATE, sendSensor);
+
+   // Clear the terminal content
+  terminal.clear();
+  terminal.println(F("Blynk v" BLYNK_VERSION ": Device started"));
+  terminal.println(DEVICE_NAME);
+  terminal.println(F("-------------"));
+  terminal.flush();
 }
 
 void loop() {
   Blynk.run();
   timer.run();
-
-  dallas.service();
 }

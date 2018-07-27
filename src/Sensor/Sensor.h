@@ -2,6 +2,8 @@
 
 #define MONAR_SENSOR_DALLAS 7
 
+#include "Arduino.h"
+
 namespace monar {
 
   class Sensor {

@@ -2,7 +2,7 @@
 * @Author: ramonmelo
 * @Date:   2018-07-05
 * @Last Modified by:   Ramon Melo
-* @Last Modified time: 2018-08-03
+* @Last Modified time: 2018-08-06
 */
 
 ///
@@ -16,21 +16,29 @@
 
 #include "Arduino.h"
 #include <BlynkSimpleEsp8266.h>
+
+#include "Sensor/Sensor.h"
 #include "Sensor/SensorDallas.h"
+#include "Sensor/SensorInputVoltage.h"
 
-#include <ESP8266httpUpdate.h>
+#include <vector>
 
-OneWire oneWire(ONE_WIRE_BUS);
-WidgetTerminal terminal(V0);
+// Configuration
 
 ADC_MODE(ADC_VCC);
 
-BlynkTimer timer;
-monar::SensorDallas dallas(&oneWire);
+/// Object declaration
 
-// Blynk App credentials
-char auth[] = "79ff8641717a48adbe72780710e8f945";
+OneWire oneWire(ONE_WIRE_BUS);
+WidgetTerminal terminal(V0);
+BlynkTimer timer;
+
+std::vector<monar::Sensor*> sensors;
+
+char auth[] = "0f251ae887d344ceb98348bf385a4a79";
 char address[] = "blynk.canionlabs.io";
+
+/// Main Scope
 
 void connect() {
   WiFi.mode(WIFI_STA);
@@ -59,8 +67,6 @@ void connect() {
   Serial.printf("Gateway IP: %s\n", WiFi.gatewayIP().toString().c_str());
   Serial.printf("Hostname: %s\n",   WiFi.hostname().c_str());
   Serial.printf("RSSI: %d dBm\n",   WiFi.RSSI());
-  Serial.println("Free:");
-  Serial.println(ESP.getFreeSketchSpace());
 }
 
 void push(int port, float value) {
@@ -69,38 +75,41 @@ void push(int port, float value) {
 
 void sendSensor()
 {
-  dallas.publish(push);
+  for (unsigned int i = 0; i < sensors.size(); ++i)
+  {
+    sensors.at(i)->publish(push);
+  }
 
   terminal.print(F("."));
   terminal.flush();
-
-  float v = ((float) ESP.getVcc() / 1024.0f) * 1.12;
-  Blynk.virtualWrite(V5, v);
 }
 
 void setup() {
   Serial.begin(9600);
+
+  sensors.push_back(new monar::SensorDallas(&oneWire));
+  sensors.push_back(new monar::SensorInputVoltage());
 
   connect();
 
   Blynk.config(auth, address, 8080);
   timer.setInterval(1000L * UPDATE_RATE, sendSensor);
 
-   // Clear the terminal content
-  terminal.clear();
-  terminal.println(F("Blynk v" BLYNK_VERSION ": Device started"));
-  terminal.println(DEVICE_NAME);
-  terminal.println(F("-------------"));
-
-  terminal.println(F("Free Scketch Space"));
-  terminal.println(ESP.getFreeSketchSpace());
-
-  terminal.flush();
-
-  // ESPhttpUpdate.update("192.168.88.240", 5000, "/firmware");
+  Serial.println("done!");
 }
 
 void loop() {
   Blynk.run();
   timer.run();
+}
+
+// Blynk Callbacks
+BLYNK_CONNECTED() {
+  terminal.clear();
+  terminal.println(F("Blynk v" BLYNK_VERSION ": Device started"));
+  terminal.println(DEVICE_NAME);
+  terminal.println(F("-------------"));
+  terminal.println(F("Free Scketch Space"));
+  terminal.println(ESP.getFreeSketchSpace());
+  terminal.flush();
 }

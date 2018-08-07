@@ -2,7 +2,7 @@
 * @Author: Ramon Melo
 * @Date:   2018-07-24
 * @Last Modified by:   Ramon Melo
-* @Last Modified time: 2018-07-26
+* @Last Modified time: 2018-08-07
 */
 
 #include "SensorDallas.h"
@@ -10,35 +10,51 @@
 using namespace monar;
 
 SensorDallas::SensorDallas(OneWire* ow) :
-  Sensor(MONAR_SENSOR_DALLAS),
-  sensors(ow) {
+  Sensor(CANION_SENSOR_DALLAS),
+  manager(ow) {
 
   Serial.print("Locating devices...");
-  sensors.begin();
+  manager.begin();
+  sensor_count = manager.getDeviceCount();
+
   Serial.print("Found ");
-  Serial.print(sensors.getDeviceCount(), DEC);
+  Serial.print(sensor_count, DEC);
   Serial.println(" devices.");
 
   Serial.print("Parasite power is: ");
-  if (sensors.isParasitePowerMode()) {
+  if (manager.isParasitePowerMode()) {
     Serial.println("ON");
   } else {
     Serial.println("OFF");
   }
 
-  if (!sensors.getAddress(thermometer, 0)) {
-    Serial.println("Unable to find address for Device 0");
+  sensors = new DeviceAddress[sensor_count];
+
+  for (int i = 0; i < sensor_count; ++i)
+  {
+    if (manager.getAddress(sensors[i], i)) {
+      Serial.println("Found Device");
+      manager.setResolution(sensors[i], 9);
+    } else {
+      Serial.println("Unable to find address for Device");
+    }
   }
-
-  sensors.setResolution(thermometer, 9);
-}
-
-SensorDallas::~SensorDallas() {
 }
 
 void SensorDallas::service() {
-  sensors.requestTemperatures();
-  float tempC = sensors.getTempC(thermometer);
+  manager.requestTemperatures();
+
+  float tempC = 0;
+  for (int i = 0; i < sensor_count; ++i)
+  {
+    float t = manager.getTempC(sensors[i]);
+
+    Serial.println(t);
+
+    tempC += t;
+  }
+
+  tempC /= sensor_count;
 
   setData(tempC);
 }

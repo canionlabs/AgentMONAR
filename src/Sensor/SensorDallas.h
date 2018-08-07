@@ -9,11 +9,11 @@ namespace monar {
   {
   public:
     SensorDallas(OneWire* ow);
-    ~SensorDallas();
 
     void service() override;
   private:
-    DallasTemperature sensors;
-    DeviceAddress thermometer;
+    DallasTemperature manager;
+    DeviceAddress *sensors;
+    int sensor_count;
   };
 }

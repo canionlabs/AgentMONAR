@@ -2,12 +2,8 @@
 * @Author: ramonmelo
 * @Date:   2018-07-05
 * @Last Modified by:   Ramon Melo
-* @Last Modified time: 2018-08-06
+* @Last Modified time: 2018-08-07
 */
-
-///
-/// DHT22 -> D5
-///
 
 #define DEVICE_NAME "Monar"
 #define BLYNK_PRINT Serial

@@ -1,9 +1,6 @@
 #pragma once
 
-#define CANION_SENSOR_VOLTAGE  5
-#define CANION_SENSOR_CURRENT  6
-#define CANION_SENSOR_DALLAS 7
-
+#include <monar_defines.h>
 #include "Arduino.h"
 
 namespace monar {
@@ -12,12 +9,15 @@ namespace monar {
   public:
     Sensor(int port);
 
-    float publish(void (*push)(int, float));
+    float send(void (*push)(int, float));
     void setData(float data);
 
+    virtual void receive(int pin, int value);
     virtual void service() = 0;
-  private:
-    int port;
+    virtual void notify(void(*alert)(String));
+
+  protected:
     float data;
+    int port;
   };
 }

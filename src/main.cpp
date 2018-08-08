@@ -5,17 +5,20 @@
 * @Last Modified time: 2018-08-07
 */
 
+#define BLYNK_PRINT Serial // Comment out when deploy
+#define BLYNK_NO_BUILTIN
+#define BLYNK_NO_FLOAT
+
 #define DEVICE_NAME "Monar"
-#define BLYNK_PRINT Serial
-#define UPDATE_RATE 15 // seconds
+
+#define UPDATE_RATE 60 // seconds
 #define ONE_WIRE_BUS D5
 
 #include "Arduino.h"
 #include <BlynkSimpleEsp8266.h>
 
-#include "Sensor/Sensor.h"
-#include "Sensor/SensorDallas.h"
-#include "Sensor/SensorInputVoltage.h"
+#include <Sensor/SensorDallas.h>
+#include <Sensor/SensorInputVoltage.h>
 
 #include <vector>
 
@@ -31,7 +34,7 @@ BlynkTimer timer;
 
 std::vector<monar::Sensor*> sensors;
 
-char auth[] = "0f251ae887d344ceb98348bf385a4a79";
+char auth[] = "cb395bc6d9a742df9baeb14b3b41db1e";
 char address[] = "blynk.canionlabs.io";
 
 /// Main Scope
@@ -42,42 +45,42 @@ void connect() {
   int cnt = 0;
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
-    Serial.print(".");
+    BLYNK_LOG(".");
     if (cnt++ >= 10) {
       WiFi.beginSmartConfig();
       while (1) {
         delay(1000);
         if (WiFi.smartConfigDone()) {
-          Serial.println();
-          Serial.println("SmartConfig: Success");
+          BLYNK_LOG("\nSmartConfig: Success");
           break;
         }
-        Serial.print("|");
+        BLYNK_LOG("|");
       }
     }
   }
 
-  Serial.println("WiFi Connected.");
+  BLYNK_LOG("WiFi Connected.");
   WiFi.printDiag(Serial);
-  Serial.printf("IP Address: %s\n", WiFi.localIP().toString().c_str());
-  Serial.printf("Gateway IP: %s\n", WiFi.gatewayIP().toString().c_str());
-  Serial.printf("Hostname: %s\n",   WiFi.hostname().c_str());
-  Serial.printf("RSSI: %d dBm\n",   WiFi.RSSI());
+  BLYNK_LOG("IP Address: %s\n", WiFi.localIP().toString().c_str());
+  BLYNK_LOG("Gateway IP: %s\n", WiFi.gatewayIP().toString().c_str());
+  BLYNK_LOG("Hostname: %s\n",   WiFi.hostname().c_str());
+  BLYNK_LOG("RSSI: %d dBm\n",   WiFi.RSSI());
 }
 
 void push(int port, float value) {
-  Blynk.virtualWrite(port, value);
+  Blynk.virtualWrite(port, (int) value);
 }
 
-void sendSensor()
-{
-  for (unsigned int i = 0; i < sensors.size(); ++i)
-  {
-    sensors.at(i)->publish(push);
-  }
+void alert(String text) {
+  Blynk.notify(String("{DEVICE_NAME}: ") + text);
+}
 
-  terminal.print(F("."));
-  terminal.flush();
+void service()
+{
+  for (unsigned int i = 0; i < sensors.size(); ++i) {
+    sensors.at(i)->send(push);
+    sensors.at(i)->notify(alert);
+  }
 }
 
 void setup() {
@@ -89,9 +92,9 @@ void setup() {
   connect();
 
   Blynk.config(auth, address, 8080);
-  timer.setInterval(1000L * UPDATE_RATE, sendSensor);
+  timer.setInterval(1000L * UPDATE_RATE, service);
 
-  Serial.println("done!");
+  BLYNK_LOG("done!");
 }
 
 void loop() {
@@ -99,13 +102,29 @@ void loop() {
   timer.run();
 }
 
+//
 // Blynk Callbacks
+//
+
 BLYNK_CONNECTED() {
-  terminal.clear();
-  terminal.println(F("Blynk v" BLYNK_VERSION ": Device started"));
-  terminal.println(DEVICE_NAME);
-  terminal.println(F("-------------"));
-  terminal.println(F("Free Scketch Space"));
-  terminal.println(ESP.getFreeSketchSpace());
-  terminal.flush();
+  // terminal.clear();
+  // terminal.println(F("Blynk v" BLYNK_VERSION ": Device started"));
+  // terminal.println(DEVICE_NAME);
+  // terminal.println(F("-------------"));
+  // terminal.println(F("Free Scketch Space"));
+  // terminal.println(ESP.getFreeSketchSpace());
+  // terminal.flush();
+
+  Blynk.syncAll();
 }
+
+BLYNK_WRITE_DEFAULT()
+{
+  int pin = request.pin;
+  int value = param.asInt();
+
+  for (unsigned int i = 0; i < sensors.size(); ++i) {
+    sensors.at(i)->receive(pin, value);
+  }
+}
+

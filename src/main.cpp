@@ -2,7 +2,7 @@
 * @Author: ramonmelo
 * @Date:   2018-07-05
 * @Last Modified by:   Ramon Melo
-* @Last Modified time: 2018-08-07
+* @Last Modified time: 2018-08-08
 */
 
 #define BLYNK_PRINT Serial // Comment out when deploy
@@ -16,6 +16,8 @@
 
 #include "Arduino.h"
 #include <BlynkSimpleEsp8266.h>
+#include <TimeLib.h>
+#include <WidgetRTC.h>
 
 #include <Sensor/SensorDallas.h>
 #include <Sensor/SensorInputVoltage.h>
@@ -29,8 +31,9 @@ ADC_MODE(ADC_VCC);
 /// Object declaration
 
 OneWire oneWire(ONE_WIRE_BUS);
-WidgetTerminal terminal(V0);
+WidgetTerminal terminal(MONAR_OUTPUT_LOG);
 BlynkTimer timer;
+WidgetRTC rtc;
 
 std::vector<monar::Sensor*> sensors;
 
@@ -71,8 +74,13 @@ void push(int port, float value) {
   Blynk.virtualWrite(port, (int) value);
 }
 
-void alert(String text) {
+void alert(int port, String text) {
   Blynk.notify(String("{DEVICE_NAME}: ") + text);
+
+  String currentTime = String("[") + String(hour()) + ":" + minute() + ":" + second() + "] ";
+
+  terminal.println(currentTime + text);
+  terminal.flush();
 }
 
 void service()
@@ -116,6 +124,7 @@ BLYNK_CONNECTED() {
   // terminal.flush();
 
   Blynk.syncAll();
+  rtc.begin();
 }
 
 BLYNK_WRITE_DEFAULT()
@@ -127,4 +136,3 @@ BLYNK_WRITE_DEFAULT()
     sensors.at(i)->receive(pin, value);
   }
 }
-

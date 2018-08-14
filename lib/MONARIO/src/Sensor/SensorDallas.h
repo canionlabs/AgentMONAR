@@ -2,6 +2,7 @@
 
 #include "Sensor.h"
 #include <DallasTemperature.h>
+#include <map>
 
 namespace monar {
 
@@ -12,7 +13,7 @@ namespace monar {
 
     void service() override;
     void receive(int pin, int value) override;
-    void notify(void(*alert)(String)) override;
+    void notify(void(*alert)(int, String)) override;
 
   private:
     DallasTemperature manager;
@@ -21,5 +22,7 @@ namespace monar {
 
     int temp_min;
     int temp_max;
+
+    std::map<int, int> pin_map;
   };
 }

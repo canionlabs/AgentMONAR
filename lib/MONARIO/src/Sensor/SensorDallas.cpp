@@ -2,16 +2,35 @@
 * @Author: Ramon Melo
 * @Date:   2018-07-24
 * @Last Modified by:   Ramon Melo
-* @Last Modified time: 2018-08-07
+* @Last Modified time: 2018-08-13
 */
 
 #include "SensorDallas.h"
 
+// function to print a device address
+void printAddress(DeviceAddress deviceAddress)
+{
+  for (uint8_t i = 0; i < 8; i++)
+  {
+    if (deviceAddress[i] < 16) Serial.print("0");
+    Serial.print(deviceAddress[i], HEX);
+  }
+}
+
 namespace monar {
 
-  SensorDallas::SensorDallas(OneWire* ow) :
-    Sensor(MONAR_OUTPUT_TEMPERATURE),
-    manager(ow) {
+  SensorDallas::SensorDallas(OneWire* ow) : manager(ow) {
+
+    // pin mapping
+    pin_map[0] = MONAR_OUTPUT_TEMPERATURE_1;
+    pin_map[1] = MONAR_OUTPUT_TEMPERATURE_2;
+    pin_map[2] = MONAR_OUTPUT_TEMPERATURE_3;
+    pin_map[3] = MONAR_OUTPUT_TEMPERATURE_4;
+    pin_map[4] = MONAR_OUTPUT_TEMPERATURE_5;
+    pin_map[5] = MONAR_OUTPUT_TEMPERATURE_6;
+    pin_map[6] = MONAR_OUTPUT_TEMPERATURE_7;
+    pin_map[7] = MONAR_OUTPUT_TEMPERATURE_8;
+    // END pin mapping
 
     Serial.print("Locating devices...");
     manager.begin();
@@ -44,15 +63,12 @@ namespace monar {
   void SensorDallas::service() {
     manager.requestTemperatures();
 
-    float tempC = 0;
     for (int i = 0; i < sensor_count; ++i)
     {
-      tempC += manager.getTempC(sensors[i]);
+      float t = manager.getTempC(sensors[i]);
+
+      setData(pin_map[i], t);
     }
-
-    tempC /= sensor_count;
-
-    setData(tempC);
   }
 
   void SensorDallas::receive(int pin, int value) {
@@ -71,13 +87,12 @@ namespace monar {
     }
   }
 
-  void SensorDallas::notify(void(*alert)(String)) {
-    if (this->data < temp_min) {
-      (*alert)(String("Alerta de BAIXA Temperatura"));
-    }
-
-    if (this->data > temp_max) {
-      (*alert)(String("Alerta de ALTA Temperatura"));
-    }
+  void SensorDallas::notify(void(*alert)(int, String)) {
+    // if (this->data < temp_min) {
+    //   (*alert)(MONAR_OUTPUT_LOG, String("Alerta de BAIXA Temperatura"));
+    // }
+    // if (this->data > temp_max) {
+    //   (*alert)(MONAR_OUTPUT_LOG, String("Alerta de ALTA Temperatura"));
+    // }
   }
 }

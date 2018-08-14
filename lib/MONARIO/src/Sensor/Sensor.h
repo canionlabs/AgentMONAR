@@ -1,23 +1,23 @@
 #pragma once
 
 #include <monar_defines.h>
+#include <map>
 #include "Arduino.h"
 
 namespace monar {
 
   class Sensor {
   public:
-    Sensor(int port);
+    Sensor();
 
-    float send(void (*push)(int, float));
-    void setData(float data);
+    void send(void (*push)(int, float));
+    void setData(int pin, float data);
 
     virtual void receive(int pin, int value);
     virtual void service() = 0;
-    virtual void notify(void(*alert)(String));
+    virtual void notify(void(*alert)(int, String));
 
   protected:
-    float data;
-    int port;
+    std::map<int, float> info;
   };
 }

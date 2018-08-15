@@ -70,17 +70,24 @@ void connect() {
   BLYNK_LOG("RSSI: %d dBm\n",   WiFi.RSSI());
 }
 
+void build_time(char *buffer) {
+  sprintf(buffer, "%02d:%02d:%02d", hour(), minute(), second());
+}
+
 void push(int port, float value) {
   Blynk.virtualWrite(port, (int) value);
 }
 
+void blynk_log(String text) {
+  char currentTime[9] = "";
+  build_time(currentTime);
+  terminal.println(String("[") + currentTime + String("] ") + text);
+  terminal.flush();
+}
+
 void alert(int port, String text) {
   Blynk.notify(String("{DEVICE_NAME}: ") + text);
-
-  String currentTime = String("[") + String(hour()) + ":" + minute() + ":" + second() + "] ";
-
-  terminal.println(currentTime + text);
-  terminal.flush();
+  blynk_log(text);
 }
 
 void service()
@@ -115,14 +122,6 @@ void loop() {
 //
 
 BLYNK_CONNECTED() {
-  // terminal.clear();
-  // terminal.println(F("Blynk v" BLYNK_VERSION ": Device started"));
-  // terminal.println(DEVICE_NAME);
-  // terminal.println(F("-------------"));
-  // terminal.println(F("Free Scketch Space"));
-  // terminal.println(ESP.getFreeSketchSpace());
-  // terminal.flush();
-
   Blynk.syncAll();
   rtc.begin();
 }

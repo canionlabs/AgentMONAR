@@ -2,7 +2,7 @@
 * @Author: Ramon Melo
 * @Date:   2018-07-24
 * @Last Modified by:   Ramon Melo
-* @Last Modified time: 2018-08-13
+* @Last Modified time: 2018-08-14
 */
 
 #include "SensorDallas.h"
@@ -63,12 +63,19 @@ namespace monar {
   void SensorDallas::service() {
     manager.requestTemperatures();
 
+    float avg_temp = 0;
+
     for (int i = 0; i < sensor_count; ++i)
     {
-      float t = manager.getTempC(sensors[i]);
+      float current_temp = manager.getTempC(sensors[i]);
+      avg_temp += current_temp;
 
-      setData(pin_map[i], t);
+      setData(pin_map[i], current_temp);
     }
+
+    avg_temp /= sensor_count;
+
+    setData(MONAR_OUTPUT_TEMPERATURE_AVG, avg_temp);
   }
 
   void SensorDallas::receive(int pin, int value) {
@@ -88,11 +95,19 @@ namespace monar {
   }
 
   void SensorDallas::notify(void(*alert)(int, String)) {
-    // if (this->data < temp_min) {
-    //   (*alert)(MONAR_OUTPUT_LOG, String("Alerta de BAIXA Temperatura"));
-    // }
-    // if (this->data > temp_max) {
-    //   (*alert)(MONAR_OUTPUT_LOG, String("Alerta de ALTA Temperatura"));
-    // }
+
+    for (int i = 0; i < sensor_count; ++i)
+    {
+      float temp = info[pin_map[i]];
+
+      if (temp < temp_min) {
+        (*alert)(MONAR_OUTPUT_LOG, String("Alerta de BAIXA Temperatura"));
+        break;
+      }
+      if (temp > temp_max) {
+        (*alert)(MONAR_OUTPUT_LOG, String("Alerta de ALTA Temperatura"));
+        break;
+      }
+    }
   }
 }

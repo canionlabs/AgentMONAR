@@ -2,7 +2,7 @@
 * @Author: Ramon Melo
 * @Date:   2018-07-24
 * @Last Modified by:   Ramon Melo
-* @Last Modified time: 2018-08-14
+* @Last Modified time: 2018-08-17
 */
 
 #include "SensorDallas.h"
@@ -73,7 +73,9 @@ namespace monar {
       setData(pin_map[i], current_temp);
     }
 
-    avg_temp /= sensor_count;
+    if (sensor_count > 1) {
+      avg_temp /= sensor_count;
+    }
 
     setData(MONAR_OUTPUT_TEMPERATURE_AVG, avg_temp);
   }

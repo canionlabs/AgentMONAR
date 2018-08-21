@@ -2,7 +2,7 @@
 * @Author: Ramon Melo
 * @Date:   2018-07-24
 * @Last Modified by:   Ramon Melo
-* @Last Modified time: 2018-08-17
+* @Last Modified time: 2018-08-20
 */
 
 #include "SensorDallas.h"
@@ -19,7 +19,7 @@ void printAddress(DeviceAddress deviceAddress)
 
 namespace monar {
 
-  SensorDallas::SensorDallas(OneWire* ow) : manager(ow) {
+  SensorDallas::SensorDallas(OneWire* ow) : manager(ow), alert_temp_change(false) {
 
     // pin mapping
     pin_map[0] = MONAR_OUTPUT_TEMPERATURE_1;
@@ -85,29 +85,39 @@ namespace monar {
     switch(pin) {
       case MONAR_INPUT_TEMPERATURE_MIN:
         temp_min = value;
+        alert_temp_change = true;
 
         Serial.println("update min");
         break;
       case MONAR_INPUT_TEMPERATURE_MAX:
         temp_max = value;
+        alert_temp_change = true;
 
         Serial.println("update max");
         break;
     }
   }
 
-  void SensorDallas::notify(void(*alert)(int, String)) {
+  void SensorDallas::notify(void(*alert)(int, String, bool)) {
+
+    if (alert_temp_change) {
+
+      (*alert)(MONAR_OUTPUT_LOG, String("Configuração: Temperatura minima de ") + temp_min, false);
+      (*alert)(MONAR_OUTPUT_LOG, String("Configuração: Temperatura máxima de ") + temp_max, false);
+
+      alert_temp_change = false;
+    }
 
     for (int i = 0; i < sensor_count; ++i)
     {
       float temp = info[pin_map[i]];
 
       if (temp < temp_min) {
-        (*alert)(MONAR_OUTPUT_LOG, String("Alerta de BAIXA Temperatura"));
+        (*alert)(MONAR_OUTPUT_LOG, String("Alerta: BAIXA Temperatura detectada"), true);
         break;
       }
       if (temp > temp_max) {
-        (*alert)(MONAR_OUTPUT_LOG, String("Alerta de ALTA Temperatura"));
+        (*alert)(MONAR_OUTPUT_LOG, String("Alerta: ALTA Temperatura detectada"), true);
         break;
       }
     }

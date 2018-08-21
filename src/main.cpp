@@ -2,7 +2,7 @@
 * @Author: ramonmelo
 * @Date:   2018-07-05
 * @Last Modified by:   Ramon Melo
-* @Last Modified time: 2018-08-17
+* @Last Modified time: 2018-08-20
 */
 
 #define APP_DEBUG
@@ -13,15 +13,17 @@
 
 #define UPDATE_RATE 60 // seconds
 #define ONE_WIRE_BUS D5
+#define VOLTAGE_SENSOR D0
 
 #include "Arduino.h"
 #include <BlynkSimpleEsp8266.h>
-#include <BlynkProvisioning.h>
+// #include <BlynkProvisioning.h>
 #include <TimeLib.h>
 #include <WidgetRTC.h>
 
 #include <Sensor/SensorDallas.h>
 #include <Sensor/SensorInputVoltage.h>
+#include <Sensor/SensorWallVoltage.h>
 
 #include <vector>
 
@@ -38,35 +40,79 @@ WidgetRTC rtc;
 
 std::vector<monar::Sensor*> sensors;
 
+char auth[] = "cb395bc6d9a742df9baeb14b3b41db1e";
+char address[] = "blynk.canionlabs.io";
+
+bool connected = false;
+bool status = false;
+unsigned long last_up = 0;
+bool long_blink = false;
+bool pulse = false;
+
 /// Main Scope
 
-// void connect() {
-//   WiFi.mode(WIFI_STA);
+void init_blinker() {
+  pinMode(D4, OUTPUT);
+  last_up = millis();
+}
 
-//   int cnt = 0;
-//   while (WiFi.status() != WL_CONNECTED) {
-//     delay(500);
-//     BLYNK_LOG(".");
-//     if (cnt++ >= 10) {
-//       WiFi.beginSmartConfig();
-//       while (1) {
-//         delay(1000);
-//         if (WiFi.smartConfigDone()) {
-//           BLYNK_LOG("\nSmartConfig: Success");
-//           break;
-//         }
-//         BLYNK_LOG("|");
-//       }
-//     }
-//   }
+void blinker() {
+  if (!connected) {
+    if ( millis() > last_up ) {
+      status = !status;
 
-//   BLYNK_LOG("WiFi Connected.");
-//   WiFi.printDiag(Serial);
-//   BLYNK_LOG("IP Address: %s\n", WiFi.localIP().toString().c_str());
-//   BLYNK_LOG("Gateway IP: %s\n", WiFi.gatewayIP().toString().c_str());
-//   BLYNK_LOG("Hostname: %s\n",   WiFi.hostname().c_str());
-//   BLYNK_LOG("RSSI: %d dBm\n",   WiFi.RSSI());
-// }
+      last_up = millis() + (long_blink ? 500 : 100);
+    }
+
+    digitalWrite(D4, status);
+  } else {
+
+    digitalWrite(D4, HIGH);
+  }
+}
+
+void connect() {
+  WiFi.mode(WIFI_STA);
+
+  bool success = false;
+
+  BLYNK_LOG("\nConnecting...");
+
+  long start_time = millis();
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(50);
+
+    if ( (millis() - start_time > 10000) && !success ) {
+
+      WiFi.beginSmartConfig();
+      BLYNK_LOG("\nBegin SmartConfig...");
+
+      while (1) {
+        delay(50);
+
+        if (WiFi.smartConfigDone()) {
+          BLYNK_LOG("\nSmartConfig: Success");
+
+          success = true;
+          break;
+        }
+
+        blinker();
+      }
+    }
+
+    blinker();
+  }
+
+  long_blink = true;
+
+  BLYNK_LOG("WiFi Connected.");
+  WiFi.printDiag(Serial);
+  BLYNK_LOG("IP Address: %s\n", WiFi.localIP().toString().c_str());
+  BLYNK_LOG("Gateway IP: %s\n", WiFi.gatewayIP().toString().c_str());
+  BLYNK_LOG("Hostname: %s\n",   WiFi.hostname().c_str());
+  BLYNK_LOG("RSSI: %d dBm\n",   WiFi.RSSI());
+}
 
 void build_time(char *buffer) {
   sprintf(buffer, "%02d:%02d:%02d", hour(), minute(), second());
@@ -83,8 +129,11 @@ void blynk_log(String text) {
   terminal.flush();
 }
 
-void alert(int port, String text) {
-  Blynk.notify(String("{DEVICE_NAME}: ") + text);
+void alert(int port, String text, bool notify) {
+  if (notify) {
+    Blynk.notify(String("{DEVICE_NAME}: ") + text);
+  }
+
   blynk_log(text);
 }
 
@@ -100,18 +149,25 @@ void setup() {
   delay(500);
   Serial.begin(9600);
 
+  init_blinker();
+  connect();
+
   sensors.push_back(new monar::SensorDallas(&oneWire));
   sensors.push_back(new monar::SensorInputVoltage());
+  sensors.push_back(new monar::SensorWallVoltage(VOLTAGE_SENSOR));
 
-  BlynkProvisioning.begin();
+  Blynk.config(auth, address, 8080);
   timer.setInterval(1000L * UPDATE_RATE, service);
 
   BLYNK_LOG("done!");
 }
 
 void loop() {
-  BlynkProvisioning.run();
+  Blynk.run();
   timer.run();
+
+  connected = Blynk.connected();
+  blinker();
 }
 
 //

@@ -2,7 +2,7 @@
 * @Author: Ramon Melo
 * @Date:   2018-07-24
 * @Last Modified by:   Ramon Melo
-* @Last Modified time: 2018-08-13
+* @Last Modified time: 2018-08-20
 */
 
 #include "Sensor.h"
@@ -23,5 +23,5 @@ namespace monar {
   }
 
   void Sensor::receive(int pin, int value) {}
-  void Sensor::notify(void(*alert)(int, String)) {}
+  void Sensor::notify(void(*alert)(int, String, bool)) {}
 }

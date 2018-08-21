@@ -15,7 +15,7 @@ namespace monar {
 
     virtual void receive(int pin, int value);
     virtual void service() = 0;
-    virtual void notify(void(*alert)(int, String));
+    virtual void notify(void(*alert)(int, String, bool));
 
   protected:
     std::map<int, float> info;

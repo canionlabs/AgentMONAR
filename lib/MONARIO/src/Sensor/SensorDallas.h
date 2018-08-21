@@ -13,7 +13,7 @@ namespace monar {
 
     void service() override;
     void receive(int pin, int value) override;
-    void notify(void(*alert)(int, String)) override;
+    void notify(void(*alert)(int, String, bool)) override;
 
   private:
     DallasTemperature manager;
@@ -22,6 +22,7 @@ namespace monar {
 
     int temp_min;
     int temp_max;
+    bool alert_temp_change;
 
     std::map<int, int> pin_map;
   };

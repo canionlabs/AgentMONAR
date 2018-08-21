@@ -18,7 +18,7 @@
 
                                          // [type, description]
 #define MONAR_OUTPUT_VOLTAGE          5  // [float, input voltage of the board]
-#define MONAR_OUTPUT_CURRENT          6  // [float, ]
+#define MONAR_OUTPUT_CURRENT          6  // [int, ]
 #define MONAR_OUTPUT_TEMPERATURE_1    7  // [float]
 #define MONAR_OUTPUT_TEMPERATURE_2    8  // [float]
 #define MONAR_OUTPUT_TEMPERATURE_3    9  // [float]

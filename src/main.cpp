@@ -26,6 +26,7 @@
 #include <Sensor/SensorWallVoltage.h>
 
 #include <vector>
+#include "config.h"
 
 // Configuration
 
@@ -39,9 +40,6 @@ BlynkTimer timer;
 WidgetRTC rtc;
 
 std::vector<monar::Sensor*> sensors;
-
-char auth[] = "cb395bc6d9a742df9baeb14b3b41db1e";
-char address[] = "blynk.canionlabs.io";
 
 bool connected = false;
 bool status = false;
@@ -156,7 +154,7 @@ void setup() {
   sensors.push_back(new monar::SensorInputVoltage());
   sensors.push_back(new monar::SensorWallVoltage(VOLTAGE_SENSOR));
 
-  Blynk.config(auth, address, 8080);
+  Blynk.config(APP_ID, BLYNK_SERVER, 8080);
   timer.setInterval(1000L * UPDATE_RATE, service);
 
   BLYNK_LOG("done!");

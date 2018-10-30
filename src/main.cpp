@@ -15,9 +15,11 @@
 #define ONE_WIRE_BUS D5
 #define VOLTAGE_SENSOR D0
 
+#define SECOND 1000
+#define MINUTE SECOND * 60
+
 #include "Arduino.h"
 #include <BlynkSimpleEsp8266.h>
-// #include <BlynkProvisioning.h>
 #include <TimeLib.h>
 #include <WidgetRTC.h>
 
@@ -64,7 +66,6 @@ void blinker() {
 
     digitalWrite(D4, status);
   } else {
-
     digitalWrite(D4, HIGH);
   }
 }
@@ -78,21 +79,25 @@ void connect() {
 
   long start_time = millis();
   while (WiFi.status() != WL_CONNECTED) {
-    delay(50);
+    delay(10);
 
-    if ( (millis() - start_time > 10000) && !success ) {
+    if ( ((millis() - start_time) > MINUTE) && !success ) {
 
       WiFi.beginSmartConfig();
       BLYNK_LOG("\nBegin SmartConfig...");
 
       while (1) {
-        delay(50);
+        delay(10);
 
         if (WiFi.smartConfigDone()) {
           BLYNK_LOG("\nSmartConfig: Success");
 
           success = true;
           break;
+        }
+
+        if ((millis() - start_time) > (MINUTE * 2)) {
+            ESP.restart();
         }
 
         blinker();

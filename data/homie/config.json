@@ -1,0 +1,19 @@
+{
+    "name": "Device01",
+    "device_id": "device001",
+    "device_stats_interval": 60,
+    "wifi": {
+        "ssid": "Venal Ninja Labs",
+        "password": "Venal@2016",
+        "dns1": "8.8.8.8",
+        "dns2": "8.8.4.4"
+    },
+    "mqtt": {
+        "host": "hephestos.local",
+        "port": 1883,
+        "base_topic": "devices/"
+    },
+    "ota": {
+        "enabled": true
+    }
+}

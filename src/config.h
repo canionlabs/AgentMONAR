@@ -1,4 +1,6 @@
 // Blynk Config
 
-#define APP_ID "7c27da3735494115bf3c946a19173430"
+#define APP_ID "78424b379ba6485ab99e46729ec9bfd7"
 #define BLYNK_SERVER "blynk.canionlabs.io"
+
+#define ENABLE_RELAY

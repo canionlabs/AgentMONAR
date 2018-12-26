@@ -38,6 +38,7 @@
                                       // [type]
 #define MONAR_INPUT_TEMPERATURE_MIN   51 // [int]
 #define MONAR_INPUT_TEMPERATURE_MAX   52 // [int]
+#define MONAR_INPUT_RELAY             53 // [int]
 
 /**
  * List of String

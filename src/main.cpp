@@ -11,7 +11,6 @@
 #define BLYNK_NO_FLOAT
 #define USE_CUSTOM_BOARD
 
-#define UPDATE_RATE 60 // seconds
 #define ONE_WIRE_BUS 14
 #define VOLTAGE_SENSOR D0
 #define LED 13
@@ -19,6 +18,9 @@
 
 #define SECOND 1000
 #define MINUTE SECOND * 60
+
+#define UPDATE_RATE MINUTE 
+#define UPDATE_SENSOR_RATE SECOND * 5
 
 #include "Arduino.h"
 #include <BlynkSimpleEsp8266.h>
@@ -41,6 +43,7 @@ ADC_MODE(ADC_VCC);
 OneWire oneWire(ONE_WIRE_BUS);
 WidgetTerminal terminal(MONAR_OUTPUT_LOG);
 BlynkTimer timer;
+BlynkTimer timerSensor;
 WidgetRTC rtc;
 
 std::vector<monar::Sensor *> sensors;
@@ -168,6 +171,14 @@ void service()
     }
 }
 
+void serviceSensor()
+{
+    for (unsigned int i = 0; i < sensors.size(); ++i)
+    {
+        sensors.at(i)->service();
+    }
+}
+
 void setup()
 {
     delay(500);
@@ -183,7 +194,8 @@ void setup()
     //   sensors.push_back(new monar::SensorWallVoltage(VOLTAGE_SENSOR));
 
     Blynk.config(APP_ID, BLYNK_SERVER, 8080);
-    timer.setInterval(1000L * UPDATE_RATE, service);
+    timer.setInterval(UPDATE_RATE, service);
+    timerSensor.setInterval(UPDATE_SENSOR_RATE, serviceSensor);
 
     BLYNK_LOG("done!");
 }

@@ -105,6 +105,8 @@ void connect()
 
     BLYNK_LOG("\nConnecting...");
 
+    long_blink = true;
+
     long start_time = millis();
     while (WiFi.status() != WL_CONNECTED)
     {
@@ -112,6 +114,7 @@ void connect()
 
         if (((millis() - start_time) > MINUTE) && !success)
         {
+            long_blink = false;
 
             WiFi.beginSmartConfig();
             BLYNK_LOG("\nBegin SmartConfig...");
@@ -203,6 +206,9 @@ void setup()
     EEPROM.begin(32);
 
     init_blinker();
+
+    WiFi.setAutoConnect(true);
+    WiFi.setAutoReconnect(true);
     connect();
 
     sensors.push_back(new monar::SensorDallas(&oneWire));

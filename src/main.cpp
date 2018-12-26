@@ -34,6 +34,8 @@
 #include <vector>
 #include "config.h"
 
+#include <EEPROM.h>
+
 // Configuration
 
 ADC_MODE(ADC_VCC);
@@ -54,7 +56,21 @@ unsigned long last_up = 0;
 bool long_blink = false;
 bool pulse = false;
 
+byte lastRelayState = 0;
+
 /// Main Scope
+
+byte loadRelayState()
+{
+    return EEPROM.read(0);
+}
+
+void saveRelayState(byte value)
+{
+    EEPROM.write(0, value);
+    EEPROM.commit();
+    EEPROM.end();
+}
 
 void init_blinker()
 {
@@ -184,10 +200,10 @@ void setup()
     delay(500);
     Serial.begin(9600);
 
+    EEPROM.begin(32);
+
     init_blinker();
     connect();
-
-    pinMode(SONOFF_RELAY, OUTPUT);
 
     sensors.push_back(new monar::SensorDallas(&oneWire));
     //   sensors.push_back(new monar::SensorInputVoltage());
@@ -196,6 +212,12 @@ void setup()
     Blynk.config(APP_ID, BLYNK_SERVER, 8080);
     timer.setInterval(UPDATE_RATE, service);
     timerSensor.setInterval(UPDATE_SENSOR_RATE, serviceSensor);
+
+#ifdef ENABLE_RELAY
+    // Relay
+    pinMode(SONOFF_RELAY, OUTPUT);
+    lastRelayState = loadRelayState();
+#endif
 
     BLYNK_LOG("done!");
 }
@@ -217,6 +239,12 @@ BLYNK_CONNECTED()
 {
     Blynk.syncAll();
     rtc.begin();
+
+#ifdef ENABLE_RELAY
+    // Setup relay
+    Blynk.virtualWrite(MONAR_INPUT_RELAY, lastRelayState);
+    digitalWrite(SONOFF_RELAY, lastRelayState);
+#endif
 }
 
 BLYNK_WRITE_DEFAULT()
@@ -230,17 +258,22 @@ BLYNK_WRITE_DEFAULT()
     }
 }
 
+#ifdef ENABLE_RELAY
 BLYNK_WRITE(MONAR_INPUT_RELAY)
 {
-    int value = param.asInt();
+    bool state = param.asInt() == 1;
+    saveRelayState(state);
+    digitalWrite(SONOFF_RELAY, state);
 
-    if (value == 1) {
-        digitalWrite(SONOFF_RELAY, HIGH);
+    if (state)
+    {
         BLYNK_LOG("Relay ON!");
         blynk_log("Aparelho ligado!");
-    } else {
-        digitalWrite(SONOFF_RELAY, LOW);
+    }
+    else
+    {
         BLYNK_LOG("Relay OFF!");
         blynk_log("Aparelho desligado!");
     }
 }
+#endif

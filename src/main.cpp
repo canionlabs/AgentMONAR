@@ -69,7 +69,6 @@ void saveRelayState(byte value)
 {
     EEPROM.write(0, value);
     EEPROM.commit();
-    EEPROM.end();
 }
 
 void init_blinker()
@@ -249,7 +248,7 @@ BLYNK_CONNECTED()
 #ifdef ENABLE_RELAY
     // Setup relay
     Blynk.virtualWrite(MONAR_INPUT_RELAY, lastRelayState);
-    digitalWrite(SONOFF_RELAY, lastRelayState);
+    // digitalWrite(SONOFF_RELAY, lastRelayState);
 #endif
 }
 

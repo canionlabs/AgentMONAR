@@ -1,284 +1,258 @@
-/*
-* @Author: ramonmelo
-* @Date:   2018-07-05
-* @Last Modified by:   Ramon Melo
-* @Last Modified time: 2018-08-20
-*/
+#include "config.h"
 
-#define APP_DEBUG
-#define BLYNK_PRINT Serial // Comment out when deploy
-#define BLYNK_NO_BUILTIN
-#define BLYNK_NO_FLOAT
-#define USE_CUSTOM_BOARD
+#include "Arduino.h"
+#include <ArduinoJson.h>
+#include <PubSubClient.h>
 
-#define ONE_WIRE_BUS 14
+// AutoConnect
+#include <ESP8266WiFi.h>
+#include <ESP8266WebServer.h>
+#include <AutoConnect.h>
+
+#include <Sensor/Sensor.h>
+
+#ifdef SENSOR_DALLAS
+#include <Sensor/SensorDallas.h>
+
+#define ONE_WIRE_BUS D5 // 14
+OneWire oneWire(ONE_WIRE_BUS);
+#endif
+
+#ifdef SENSOR_WALL
+#include <Sensor/SensorWallVoltage.h>
 #define VOLTAGE_SENSOR D0
-#define LED 13
-#define SONOFF_RELAY 12
+#endif
+
+#ifdef SENSOR_DHT
+#include <Sensor/SensorDHT.h>
+#define DHT_PIN D3
+#endif
+
+#define LED_IN D4  // 2
+#define LED LED_IN // D6	// 12
 
 #define SECOND 1000
 #define MINUTE SECOND * 60
 
-#define UPDATE_RATE MINUTE 
-#define UPDATE_SENSOR_RATE SECOND * 5
+#define CONNECT_WAIT 30 * SECOND // 30 sec
+#define RECONNECT_RATE 5000
+#define READ_RATE 15 * SECOND
 
-#include "Arduino.h"
-#include <BlynkSimpleEsp8266.h>
-#include <TimeLib.h>
-#include <WidgetRTC.h>
+enum CurrState
+{
+	INIT,
+	WIFI_DISCONNECTED,
+	WIFI_CONNECTED,
+	BROKER_DISCONNECTED,
+	BROKER_CONNECTED,
+	SMART_CONFIG,
+};
 
-#include <Sensor/SensorDallas.h>
-#include <Sensor/SensorInputVoltage.h>
-#include <Sensor/SensorWallVoltage.h>
+CurrState state = CurrState::INIT;
 
-#include <vector>
-#include "config.h"
+WiFiClient espClient;
+PubSubClient client(espClient);
 
-#include <EEPROM.h>
-
-// Configuration
-
-ADC_MODE(ADC_VCC);
-
-/// Object declaration
-
-OneWire oneWire(ONE_WIRE_BUS);
-WidgetTerminal terminal(MONAR_OUTPUT_LOG);
-BlynkTimer timer;
-BlynkTimer timerSensor;
-WidgetRTC rtc;
+ESP8266WebServer Server;
+AutoConnect Portal(Server);
+AutoConnectConfig Config;
 
 std::vector<monar::Sensor *> sensors;
 
-bool connected = false;
-bool status = false;
 unsigned long last_up = 0;
+bool status = false;
 bool long_blink = false;
-bool pulse = false;
 
-byte lastRelayState = 0;
+bool sent_attr = false;
 
-/// Main Scope
+unsigned long nextReconnectAttempt = 0;
+unsigned long nextSend = 0;
 
-byte loadRelayState()
+void rootPage()
 {
-    return EEPROM.read(0);
-}
-
-void saveRelayState(byte value)
-{
-    EEPROM.write(0, value);
-    EEPROM.commit();
+	char content[] = "MONAR, CanionLabs";
+	Server.send(200, "text/plain", content);
 }
 
 void init_blinker()
 {
-    pinMode(LED, OUTPUT);
-    last_up = millis();
+	pinMode(LED, OUTPUT);
+	last_up = millis();
 }
 
 void blinker()
 {
-    if (!connected)
-    {
-        if (millis() > last_up)
-        {
-            status = !status;
+	if (state != CurrState::BROKER_CONNECTED)
+	{
+		if (millis() > last_up)
+		{
+			status = !status;
+			last_up = millis() + (long_blink ? 500 : 100);
+		}
 
-            last_up = millis() + (long_blink ? 500 : 100);
-        }
-
-        digitalWrite(LED, status);
-    }
-    else
-    {
-        digitalWrite(LED, HIGH);
-    }
+		digitalWrite(LED, status);
+	}
+	else
+	{
+		digitalWrite(LED, HIGH);
+	}
 }
 
-void connect()
+void brokerConnect()
 {
-    WiFi.mode(WIFI_STA);
+	if (client.connected() || nextReconnectAttempt > millis())
+	{
+		return;
+	}
 
-    bool success = false;
+	Serial.println("Connecting to Broker");
 
-    BLYNK_LOG("\nConnecting...");
+	state = CurrState::BROKER_DISCONNECTED;
 
-    long_blink = true;
+	if (client.connect(MQTT_ID, MQTT_USER, NULL))
+	{
+		state = CurrState::BROKER_CONNECTED;
+		Serial.println("Connected to Broker");
+	}
+	else
+	{
+		Serial.print("Error while connecting to broker: ");
+		Serial.println(client.state());
+	}
 
-    long start_time = millis();
-    while (WiFi.status() != WL_CONNECTED)
-    {
-        delay(10);
-
-        if (((millis() - start_time) > MINUTE) && !success)
-        {
-            long_blink = false;
-
-            WiFi.beginSmartConfig();
-            BLYNK_LOG("\nBegin SmartConfig...");
-
-            while (1)
-            {
-                delay(10);
-
-                if (WiFi.smartConfigDone())
-                {
-                    BLYNK_LOG("\nSmartConfig: Success");
-
-                    success = true;
-                    break;
-                }
-
-                if ((millis() - start_time) > (MINUTE * 2))
-                {
-                    ESP.restart();
-                }
-
-                blinker();
-            }
-        }
-
-        blinker();
-    }
-
-    long_blink = true;
-
-    BLYNK_LOG("WiFi Connected.");
-    WiFi.printDiag(Serial);
-    BLYNK_LOG("IP Address: %s\n", WiFi.localIP().toString().c_str());
-    BLYNK_LOG("Gateway IP: %s\n", WiFi.gatewayIP().toString().c_str());
-    BLYNK_LOG("Hostname: %s\n", WiFi.hostname().c_str());
-    BLYNK_LOG("RSSI: %d dBm\n", WiFi.RSSI());
+	nextReconnectAttempt = millis() + RECONNECT_RATE;
 }
 
-void build_time(char *buffer)
+void buildMessage(String *jsonStr)
 {
-    sprintf(buffer, "%02d:%02d:%02d", hour(), minute(), second());
-}
+	const size_t bufferSize = JSON_OBJECT_SIZE(4);
+	DynamicJsonDocument jsonBuffer(bufferSize);
 
-void push(int port, float value)
-{
-    Blynk.virtualWrite(port, (int)value);
-}
+	for (unsigned int i = 0; i < sensors.size(); ++i)
+	{
+		for (int j = 0; j < sensors.at(i)->length(); ++j)
+		{
+			String base = "";
+			base += sensors.at(i)->prefix();
+			base += j;
 
-void blynk_log(String text)
-{
-    char currentTime[9] = "";
-    build_time(currentTime);
-    terminal.println(String("[") + currentTime + String("] ") + text);
-    terminal.flush();
-}
+			Serial.println(base);
+			Serial.println(sensors.at(i)->read(j));
 
-void alert(int port, String text, bool notify)
-{
-    if (notify)
-    {
-        Blynk.notify(String("{DEVICE_NAME}: ") + text);
-    }
+			jsonBuffer[base] = sensors.at(i)->read(j);
+		}
+	}
 
-    blynk_log(text);
-}
-
-void service()
-{
-    for (unsigned int i = 0; i < sensors.size(); ++i)
-    {
-        sensors.at(i)->send(push);
-        sensors.at(i)->notify(alert);
-    }
+	serializeJson(jsonBuffer, *jsonStr);
 }
 
 void serviceSensor()
 {
-    for (unsigned int i = 0; i < sensors.size(); ++i)
-    {
-        sensors.at(i)->service();
-    }
+	for (unsigned int i = 0; i < sensors.size(); ++i)
+	{
+		sensors.at(i)->service();
+	}
+}
+
+void sendEvent()
+{
+	// Cancel if not connected
+	if (client.connected() == false)
+	{
+		return;
+	}
+
+	// Wait for update rate
+	if (nextSend < millis())
+	{
+		serviceSensor();
+
+		String msg;
+		buildMessage(&msg);
+
+		client.publish(DATA_TOPIC, msg.c_str());
+
+		nextSend = millis() + READ_RATE;
+
+		Serial.println("push");
+	}
+}
+
+void update_attr()
+{
+	if (sent_attr == false && client.connected())
+	{
+		String output;
+		StaticJsonDocument<200> doc;
+		doc["v"] = VERSION;
+		serializeJson(doc, output);
+
+		Serial.println(output);
+
+		if (client.publish(ATTR_TOPIC, output.c_str()))
+		{
+			Serial.println("Attributes Updated");
+			sent_attr = true;
+		}
+	}
 }
 
 void setup()
 {
-    delay(500);
-    Serial.begin(9600);
+	Serial.begin(115200);
+	while (!Serial)
+	{
+	}
 
-    EEPROM.begin(32);
+	Serial.println("\nstarting...");
 
-    init_blinker();
+	state = CurrState::INIT;
+	init_blinker();
 
-    WiFi.setAutoConnect(true);
-    WiFi.setAutoReconnect(true);
-    connect();
+	client.setServer(MQTT_BROKER, MQTT_PORT);
 
-    sensors.push_back(new monar::SensorDallas(&oneWire));
-    //   sensors.push_back(new monar::SensorInputVoltage());
-    //   sensors.push_back(new monar::SensorWallVoltage(VOLTAGE_SENSOR));
-
-    Blynk.config(APP_ID, BLYNK_SERVER, 8080);
-    timer.setInterval(UPDATE_RATE, service);
-    timerSensor.setInterval(UPDATE_SENSOR_RATE, serviceSensor);
-
-#ifdef ENABLE_RELAY
-    // Relay
-    pinMode(SONOFF_RELAY, OUTPUT);
-    lastRelayState = loadRelayState();
+#ifdef SENSOR_DALLAS
+	sensors.push_back(new monar::SensorDallas(&oneWire));
+#endif
+#ifdef SENSOR_WALL
+	sensors.push_back(new monar::SensorWallVoltage(VOLTAGE_SENSOR));
+#endif
+#ifdef SENSOR_DHT
+	sensors.push_back(new monar::SensorDHT(DHT_PIN));
 #endif
 
-    BLYNK_LOG("done!");
+	Config.title = PORTAL_TITLE;
+	Config.apid = PORTAL_TITLE + WiFi.macAddress();
+	Config.psk = PORTAL_PW;
+	Config.autoReconnect = true;
+	Config.autoReset = true;
+
+	Portal.config(Config);
+
+	Server.on("/", rootPage);
+	if (Portal.begin())
+	{
+		Serial.println("WiFi connected: " + WiFi.localIP().toString());
+	}
+	else
+	{
+		Serial.println("Error starting portal");
+	}
+
+	Serial.println("ready");
 }
 
 void loop()
 {
-    Blynk.run();
-    timer.run();
+	blinker();
 
-    connected = Blynk.connected();
-    blinker();
+	Portal.handleClient();
+
+	brokerConnect();
+	client.loop();
+
+	sendEvent();
+	update_attr();
+
+	delay(10);
 }
-
-//
-// Blynk Callbacks
-//
-
-BLYNK_CONNECTED()
-{
-    Blynk.syncAll();
-    rtc.begin();
-
-#ifdef ENABLE_RELAY
-    // Setup relay
-    Blynk.virtualWrite(MONAR_INPUT_RELAY, lastRelayState);
-    // digitalWrite(SONOFF_RELAY, lastRelayState);
-#endif
-}
-
-BLYNK_WRITE_DEFAULT()
-{
-    int pin = request.pin;
-    int value = param.asInt();
-
-    for (unsigned int i = 0; i < sensors.size(); ++i)
-    {
-        sensors.at(i)->receive(pin, value);
-    }
-}
-
-#ifdef ENABLE_RELAY
-BLYNK_WRITE(MONAR_INPUT_RELAY)
-{
-    bool state = param.asInt() == 1;
-    saveRelayState(state);
-    digitalWrite(SONOFF_RELAY, state);
-
-    if (state)
-    {
-        BLYNK_LOG("Relay ON!");
-        blynk_log("Aparelho ligado!");
-    }
-    else
-    {
-        BLYNK_LOG("Relay OFF!");
-        blynk_log("Aparelho desligado!");
-    }
-}
-#endif

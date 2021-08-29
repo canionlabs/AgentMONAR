@@ -1,6 +1,14 @@
-// Blynk Config
+// MONAR Config File
 
-#define APP_ID "78424b379ba6485ab99e46729ec9bfd7"
-#define BLYNK_SERVER "blynk.canionlabs.io"
+#define MQTT_BROKER ""
+#define MQTT_ID "" 
+#define MQTT_USER ""
+#define MQTT_PORT 1883
 
-#define ENABLE_RELAY
+#define PORTAL_PW "@#canionlabs@#"
+#define PORTAL_TITLE "MONAR"
+
+#define DATA_TOPIC "v1/devices/me/telemetry"
+#define ATTR_TOPIC "v1/devices/me/attributes"
+
+#define VERSION 200

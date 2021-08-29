@@ -1,22 +1,27 @@
-#ifdef SENSOR_WALL
+#ifdef SENSOR_DHT
 #pragma once
 
 #include "Sensor.h"
+#include <Adafruit_Sensor.h>
+#include <DHT.h>
+#include <DHT_U.h>
 
 namespace monar {
 
-  class SensorWallVoltage : public Sensor
+  class SensorDHT : public Sensor
   {
   public:
-    SensorWallVoltage(int pin);
+    SensorDHT(int pin);
 
     void service() override;
     int length() override;
     char prefix() override;
+
+    // void receive(int pin, int value) override;
     // void notify(void(*alert)(int, String, bool)) override;
 
   private:
-    int inputPin;
+	  DHT_Unified dht;
   };
 }
 #endif
